@@ -1,9 +1,10 @@
-use adventofcode2023::day5;
+use adventofcode2023::day6;
 
-use std::fs;
+//use std::fs;
 
 fn main() {
-    let input = fs::read_to_string("input.txt").unwrap();
+    //let input = fs::read_to_string("input.txt").unwrap();
 
-    day5::puzzle2(&input);
+    //day6::puzzle1(&input);
+    day6::puzzle1();
 }
