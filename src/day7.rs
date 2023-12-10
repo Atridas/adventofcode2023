@@ -29,7 +29,6 @@ enum Card {
     A,
     K,
     Q,
-    J,
     T,
     N9,
     N8,
@@ -39,6 +38,7 @@ enum Card {
     N4,
     N3,
     N2,
+    J,
 }
 
 #[derive(Eq)]
@@ -92,12 +92,17 @@ impl FromStr for Hand {
         }
 
         let mut amount = [0; 13];
+        let mut jokers = 0;
         for card in cards {
-            amount[card as usize] += 1;
+            if card == Card::J {
+                jokers += 1;
+            } else {
+                amount[card as usize] += 1;
+            }
         }
         amount.sort_by(|a, b| b.cmp(a));
 
-        let kind = match amount[0] {
+        let kind = match amount[0] + jokers {
             5 => Type::FiveOf,
             4 => Type::FourOf,
             3 => match amount[1] {
