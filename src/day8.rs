@@ -1,49 +1,24 @@
+use gcd::Gcd;
 use std::{collections::HashMap, str::FromStr};
 
 pub fn puzzle1(input: &str) {
     let input: Input = input.parse().unwrap();
 
-    let mut result = 0;
-    let mut current_node = &input.first_node;
-    loop {
-        if current_node == "ZZZ" {
-            break;
-        }
-        for step in &input.instructions {
-            current_node = match step {
-                LR::Left => &input.nodes.get(current_node).unwrap().0,
-                LR::Right => &input.nodes.get(current_node).unwrap().1,
-            };
-            result += 1;
-        }
-    }
+    let result = input.compute_steps("AAA");
     println!("{result}");
 }
 
 pub fn puzzle2(input: &str) {
     let input: Input = input.parse().unwrap();
 
-    let mut result = 0;
-    let mut current_nodes = input.first_nodes;
-    'a: loop {
-        for step in &input.instructions {
-            let mut found = true;
+    let result = input
+        .first_nodes
+        .iter()
+        .map(|initial| input.compute_steps2(initial))
+        .fold(1, |a, b| a * b / a.gcd(b))
+        * input.instructions as u64;
 
-            for current_node in current_nodes.iter_mut() {
-                if !current_node.ends_with("Z") {
-                    found = false;
-                }
-                current_node.clone_from(match step {
-                    LR::Left => &input.nodes.get(current_node).unwrap().0,
-                    LR::Right => &input.nodes.get(current_node).unwrap().1,
-                });
-            }
-            if found {
-                break 'a;
-            }
-            result += 1;
-        }
-    }
+    //println!("{:?}", results);
     println!("{result}");
 }
 
@@ -53,10 +28,36 @@ enum LR {
 }
 
 struct Input {
-    instructions: Vec<LR>,
-    first_node: String,
     first_nodes: Vec<String>,
-    nodes: HashMap<String, (String, String)>,
+    steps: HashMap<String, String>,
+    instructions: u16,
+}
+
+impl Input {
+    fn compute_steps(&self, starting: &str) -> usize {
+        let mut result = 0;
+        let mut current_node = starting;
+        loop {
+            if current_node == "ZZZ" {
+                break;
+            }
+            current_node = self.steps.get(current_node).unwrap();
+            result += self.instructions as usize;
+        }
+        result
+    }
+    fn compute_steps2(&self, starting: &str) -> u64 {
+        let mut result = 0;
+        let mut current_node = starting;
+        loop {
+            if current_node.ends_with("Z") {
+                break;
+            }
+            current_node = self.steps.get(current_node).unwrap();
+            result += 1;
+        }
+        result
+    }
 }
 
 impl FromStr for Input {
@@ -92,11 +93,22 @@ impl FromStr for Input {
             }
         }
 
+        let mut steps = HashMap::new();
+        for (node, _) in &nodes {
+            let mut dest: &str = &node;
+            for instruction in &instructions {
+                dest = match *instruction {
+                    LR::Left => &nodes.get(dest).unwrap().0,
+                    LR::Right => &nodes.get(dest).unwrap().1,
+                };
+            }
+            steps.insert(node.clone(), dest.to_string());
+        }
+
         Ok(Input {
-            first_node: "AAA".to_string(),
             first_nodes,
-            instructions,
-            nodes,
+            instructions: instructions.len() as u16,
+            steps,
         })
     }
 }
