@@ -1,72 +1,81 @@
 use std::collections::HashMap;
 
 pub fn puzzle1(input: &str) {
-    let records = input.lines().map(|line| {
-        let mut wp = line.split_whitespace();
-        let springs: Vec<_> = wp
-            .next()
-            .unwrap()
-            .chars()
-            .map(|c| match c {
-                '.' => Spring::Operational,
-                '#' => Spring::Damaged,
-                '?' => Spring::Unknown,
-                _ => panic!("unknown spring condition"),
-            })
-            .collect();
-        let list: Vec<_> = wp
-            .next()
-            .unwrap()
-            .split(",")
-            .map(|s| s.parse::<u32>().unwrap())
-            .collect();
-        (springs, list)
-    });
+    let records: Vec<_> = input
+        .lines()
+        .map(|line| {
+            let mut wp = line.split_whitespace();
+            let springs: Vec<_> = wp
+                .next()
+                .unwrap()
+                .chars()
+                .map(|c| match c {
+                    '.' => Spring::Operational,
+                    '#' => Spring::Damaged,
+                    '?' => Spring::Unknown,
+                    _ => panic!("unknown spring condition"),
+                })
+                .collect();
+            let list: Vec<_> = wp
+                .next()
+                .unwrap()
+                .split(",")
+                .map(|s| s.parse::<u32>().unwrap())
+                .collect();
+            (springs, list)
+        })
+        .collect();
 
-    //let mut cache = HashMap::new();
+    let count = records
+        .iter()
+        .map(|(config, list)| {
+            let mut cache = HashMap::new();
+            count_combinations(&config, &list, &mut cache)
+        })
+        .fold(0, |a, b| a + b.unwrap_or(0));
 
-    // let count = records
-    //     .map(|(config, list)| count_combinations(&config, &list, &mut cache))
-    //     .fold(0, |a, b| a + b.unwrap_or(0));
-
-    //println!("{count}");
+    println!("{count}");
 }
 
 pub fn puzzle2(input: &str) {
-    let records = input.lines().map(|line| {
-        let mut wp = line.split_whitespace();
-        let springs: Vec<_> = wp
-            .next()
-            .unwrap()
-            .chars()
-            .map(|c| match c {
-                '.' => Spring::Operational,
-                '#' => Spring::Damaged,
-                '?' => Spring::Unknown,
-                _ => panic!("unknown spring condition"),
-            })
-            .collect();
-        let list: Vec<_> = wp
-            .next()
-            .unwrap()
-            .split(",")
-            .map(|s| s.parse::<u32>().unwrap())
-            .collect();
+    let records: Vec<_> = input
+        .lines()
+        .map(|line| {
+            let mut wp = line.split_whitespace();
+            let springs: Vec<_> = wp
+                .next()
+                .unwrap()
+                .chars()
+                .map(|c| match c {
+                    '.' => Spring::Operational,
+                    '#' => Spring::Damaged,
+                    '?' => Spring::Unknown,
+                    _ => panic!("unknown spring condition"),
+                })
+                .collect();
+            let list: Vec<_> = wp
+                .next()
+                .unwrap()
+                .split(",")
+                .map(|s| s.parse::<u32>().unwrap())
+                .collect();
 
-        let mut actual_sprints = Vec::new();
-        let mut actual_list = Vec::new();
-        actual_sprints.extend(&springs);
-        actual_list.extend(&list);
-        for _ in 0..4 {
-            actual_sprints.push(Spring::Unknown);
+            let mut actual_sprints = Vec::new();
+            let mut actual_list = Vec::new();
             actual_sprints.extend(&springs);
             actual_list.extend(&list);
-        }
+            for _ in 0..4 {
+                actual_sprints.push(Spring::Unknown);
+                actual_sprints.extend(&springs);
+                actual_list.extend(&list);
+            }
 
-        (actual_sprints, actual_list)
-    });
+            (actual_sprints, actual_list)
+        })
+        .collect();
 
     let count = records
+        .iter()
         .map(|(config, list)| {
             let mut cache = HashMap::new();
             count_combinations(&config, &list, &mut cache)
@@ -89,10 +98,10 @@ struct DictKey<'a> {
     list: &'a [u32],
 }
 
-fn continue_combinations<'a>(
+fn continue_combinations<'a, 'b: 'a>(
     count: u32,
-    config: &'a [Spring],
-    list: &'a [u32],
+    config: &'b [Spring],
+    list: &'b [u32],
     cache: &mut HashMap<DictKey<'a>, Option<u64>>,
 ) -> Option<u64> {
     if count > 0 {
@@ -114,9 +123,9 @@ fn continue_combinations<'a>(
     }
 }
 
-fn count_combinations<'a>(
-    config: &'a [Spring],
-    list: &'a [u32],
+fn count_combinations<'a, 'b: 'a>(
+    config: &'b [Spring],
+    list: &'b [u32],
     cache: &mut HashMap<DictKey<'a>, Option<u64>>,
 ) -> Option<u64> {
     if let Some(cached) = cache.get(&DictKey { config, list }) {
