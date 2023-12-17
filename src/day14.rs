@@ -1,5 +1,3 @@
-use std::cell::Ref;
-
 pub fn puzzle1(input: &str) {
     let mut input = input
         .lines()
