@@ -5,5 +5,5 @@ use std::fs;
 fn main() {
     let input = fs::read_to_string("input.txt").unwrap();
 
-    day16::puzzle1(&input);
+    day16::puzzle2(&input);
 }

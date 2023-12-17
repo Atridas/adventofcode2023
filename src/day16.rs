@@ -4,6 +4,34 @@ pub fn puzzle1(input: &str) {
     println!("{}", count_energized(&input, (0, 0, Direction::Right)));
 }
 
+pub fn puzzle2(input: &str) {
+    let input = parse(input);
+
+    let mut max_energy = 0;
+    for x in 0..input.1 {
+        let e1 = count_energized(&input, (x, 0, Direction::Down));
+        let e2 = count_energized(&input, (x, input.2 - 1, Direction::Up));
+        if e1 > max_energy {
+            max_energy = e1;
+        }
+        if e2 > max_energy {
+            max_energy = e2;
+        }
+    }
+    for y in 0..input.2 {
+        let e1 = count_energized(&input, (0, y, Direction::Right));
+        let e2 = count_energized(&input, (input.1 - 1, y, Direction::Left));
+        if e1 > max_energy {
+            max_energy = e1;
+        }
+        if e2 > max_energy {
+            max_energy = e2;
+        }
+    }
+
+    println!("{}", max_energy);
+}
+
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 enum Mirror {
     Empty,
@@ -141,22 +169,22 @@ fn count_energized(
     for (i, elem) in incoming_lightmap.iter().enumerate() {
         if elem.len() > 0 {
             energized += 1;
-            if elem.len() == 1 {
-                match elem[0] {
-                    Direction::Down => print!("v"),
-                    Direction::Up => print!("^"),
-                    Direction::Left => print!("<"),
-                    Direction::Right => print!(">"),
-                    _ => panic!(""),
-                }
-            } else {
-                print!("{}", elem.len());
-            }
+            // if elem.len() == 1 {
+            //     match elem[0] {
+            //         Direction::Down => print!("v"),
+            //         Direction::Up => print!("^"),
+            //         Direction::Left => print!("<"),
+            //         Direction::Right => print!(">"),
+            //         _ => panic!(""),
+            //     }
+            // } else {
+            //     print!("{}", elem.len());
+            // }
         } else {
-            print!(".");
+            //print!(".");
         }
         if i % width == width - 1 {
-            print!("\n");
+            // print!("\n");
         }
     }
     energized
