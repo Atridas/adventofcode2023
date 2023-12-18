@@ -1,7 +1,17 @@
-use std::{cmp::Ordering, collections::BinaryHeap};
+use std::{
+    cmp::Ordering,
+    collections::{BinaryHeap, HashMap},
+};
 
 pub fn puzzle1(input: &str) {
     let (field, heuristics, width, height) = parse(input);
+
+    // for y in 0..height {
+    //     for x in 0..width {
+    //         print!("{:0>3} ", heuristics[y * width + x]);
+    //     }
+    //     print!("\n");
+    // }
 
     let mut heap = BinaryHeap::new();
     heap.push(Step::new(
@@ -14,14 +24,30 @@ pub fn puzzle1(input: &str) {
     ));
     heap.push(Step::new(
         (0, 1),
-        Direction::Right,
+        Direction::Down,
         None,
         width,
         &field,
         &heuristics,
     ));
 
+    let mut visited = HashMap::new();
+
     while let Some(step) = heap.pop() {
+        let node = Visited::new(&step);
+        if let Some(v) = visited.get(&node) {
+            if *v <= step.cost {
+                continue;
+            }
+        }
+        visited.insert(node, step.cost);
+
+        // if heap.len() > 10 {
+        //     while let Some(step) = heap.pop() {
+        //         println!("{:?}", step);
+        //     }
+        //     return;
+        // }
         if step.coord == (width - 1, height - 1) {
             // let mut path = Vec::new();
             // path.push(step.coord);
@@ -38,21 +64,18 @@ pub fn puzzle1(input: &str) {
             println!("{}", step.cost);
             return;
         }
-        let mut can_go_forward = true;
-        if let Some(prev1) = &step.last {
-            if let Some(prev2) = &prev1.last {
-                can_go_forward = step.dir != prev1.dir || step.dir != prev2.dir;
-            }
-        }
+        let can_go_forward = step.path.len() < 3
+            || step.path[step.path.len() - 1] != step.path[step.path.len() - 2]
+            || step.path[step.path.len() - 1] != step.path[step.path.len() - 3];
 
-        if step.coord.0 > 0
-            && step.dir != Direction::Right
-            && (can_go_forward || step.dir != Direction::Left)
+        let dir = step.path[step.path.len() - 1];
+
+        if step.coord.0 > 0 && dir != Direction::Right && (can_go_forward || dir != Direction::Left)
         {
             heap.push(Step::new(
                 (step.coord.0 - 1, step.coord.1),
                 Direction::Left,
-                Some(Box::new(step.clone())),
+                Some(&step),
                 width,
                 &field,
                 &heuristics,
@@ -60,27 +83,24 @@ pub fn puzzle1(input: &str) {
         }
 
         if step.coord.0 < width - 1
-            && step.dir != Direction::Left
-            && (can_go_forward || step.dir != Direction::Right)
+            && dir != Direction::Left
+            && (can_go_forward || dir != Direction::Right)
         {
             heap.push(Step::new(
                 (step.coord.0 + 1, step.coord.1),
                 Direction::Right,
-                Some(Box::new(step.clone())),
+                Some(&step),
                 width,
                 &field,
                 &heuristics,
             ));
         }
 
-        if step.coord.1 > 0
-            && step.dir != Direction::Down
-            && (can_go_forward || step.dir != Direction::Up)
-        {
+        if step.coord.1 > 0 && dir != Direction::Down && (can_go_forward || dir != Direction::Up) {
             heap.push(Step::new(
                 (step.coord.0, step.coord.1 - 1),
                 Direction::Up,
-                Some(Box::new(step.clone())),
+                Some(&step),
                 width,
                 &field,
                 &heuristics,
@@ -88,13 +108,13 @@ pub fn puzzle1(input: &str) {
         }
 
         if step.coord.1 < height - 1
-            && step.dir != Direction::Up
-            && (can_go_forward || step.dir != Direction::Down)
+            && dir != Direction::Up
+            && (can_go_forward || dir != Direction::Down)
         {
             heap.push(Step::new(
                 (step.coord.0, step.coord.1 + 1),
                 Direction::Down,
-                Some(Box::new(step.clone())),
+                Some(&step),
                 width,
                 &field,
                 &heuristics,
@@ -103,7 +123,7 @@ pub fn puzzle1(input: &str) {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
 enum Direction {
     Left,
     Right,
@@ -114,29 +134,45 @@ enum Direction {
 #[derive(Debug, Clone, Eq, PartialEq)]
 struct Step {
     coord: (usize, usize),
-    dir: Direction,
+    path: Vec<Direction>,
     cost: usize,
     heuristic: usize,
-    last: Option<Box<Step>>,
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+struct Visited {
+    coord: (usize, usize),
+    direction: Direction,
+    streak: u8,
 }
 
 impl Step {
     fn new(
         coord: (usize, usize),
         dir: Direction,
-        last: Option<Box<Step>>,
+        last: Option<&Step>,
         width: usize,
         field: &Vec<u8>,
         heuristics: &Vec<usize>,
     ) -> Step {
-        let cost = if let Some(last) = &last { last.cost } else { 0 }
-            + field[coord.1 * width + coord.0] as usize;
-        Self {
-            coord,
-            dir,
-            cost,
-            last,
-            heuristic: cost + heuristics[coord.1 * width + coord.0],
+        if let Some(last) = &last {
+            let cost = last.cost + field[coord.1 * width + coord.0] as usize;
+            let mut path = last.path.clone();
+            path.push(dir);
+            Self {
+                coord,
+                cost,
+                path,
+                heuristic: cost + heuristics[coord.1 * width + coord.0],
+            }
+        } else {
+            let cost = field[coord.1 * width + coord.0] as usize;
+            Self {
+                coord,
+                cost,
+                path: vec![dir],
+                heuristic: cost + heuristics[coord.1 * width + coord.0],
+            }
         }
     }
 }
@@ -174,18 +210,37 @@ fn parse(input: &str) -> (Vec<u8>, Vec<usize>, usize, usize) {
     heuristics.resize(width * height, 0);
     for x in (0..width - 1).rev() {
         heuristics[(height - 1) * width + x] =
-            heuristics[(height - 1) * width + x + 1] + field[(height - 1) * width + x] as usize;
+            heuristics[(height - 1) * width + x + 1] + field[(height - 1) * width + x + 1] as usize;
     }
     for y in (0..height - 1).rev() {
         heuristics[y * width + width - 1] =
-            heuristics[(y + 1) * width + width - 1] + field[y * width + width - 1] as usize;
+            heuristics[(y + 1) * width + width - 1] + field[(y + 1) * width + width - 1] as usize;
         for x in (0..width - 1).rev() {
-            let h1 = heuristics[y * width + x + 1];
-            let h2 = heuristics[(y + 1) * width + x];
-            heuristics[y * width + x] =
-                if h1 < h2 { h1 } else { h2 } + field[y * width + x] as usize;
+            let h1 = heuristics[y * width + x + 1] + field[y * width + x + 1] as usize;
+            let h2 = heuristics[(y + 1) * width + x] + field[(y + 1) * width + x] as usize;
+            heuristics[y * width + x] = if h1 < h2 { h1 } else { h2 };
         }
     }
 
     (field, heuristics, width, height)
+}
+
+impl Visited {
+    fn new(step: &Step) -> Visited {
+        Self {
+            coord: step.coord,
+            direction: step.path[step.path.len() - 1],
+            streak: if step.path.len() == 1
+                || step.path[step.path.len() - 1] != step.path[step.path.len() - 2]
+            {
+                1
+            } else if step.path.len() == 2
+                || step.path[step.path.len() - 1] != step.path[step.path.len() - 3]
+            {
+                2
+            } else {
+                3
+            },
+        }
+    }
 }
