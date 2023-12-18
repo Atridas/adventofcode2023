@@ -123,6 +123,143 @@ pub fn puzzle1(input: &str) {
     }
 }
 
+pub fn puzzle2(input: &str) {
+    let (field, heuristics, width, height) = parse(input);
+
+    let mut heap = BinaryHeap::new();
+    heap.push(Step::new(
+        (1, 0),
+        Direction::Right,
+        None,
+        width,
+        &field,
+        &heuristics,
+    ));
+    heap.push(Step::new(
+        (0, 1),
+        Direction::Down,
+        None,
+        width,
+        &field,
+        &heuristics,
+    ));
+
+    let mut visited = HashMap::new();
+
+    while let Some(step) = heap.pop() {
+        let node = Visited::new(&step);
+        let streak = node.streak;
+        let dir = node.direction;
+        if let Some(v) = visited.get(&node) {
+            if *v <= step.cost {
+                continue;
+            }
+        }
+        visited.insert(node, step.cost);
+
+        if step.coord == (width - 1, height - 1) && streak >= 4 {
+            let mut acum = 1;
+            for i in 1..step.path.len() {
+                if step.path[i] == step.path[i - 1] {
+                    acum += 1;
+                } else {
+                    println!("{:?} {acum}", step.path[i - 1]);
+                    acum = 1;
+                }
+            }
+            println!("{:?} {acum}", step.path[step.path.len() - 1]);
+            println!("{}", step.cost);
+            return;
+        }
+
+        let mut can_go_right = false;
+        let mut can_go_left = false;
+        let mut can_go_up = false;
+        let mut can_go_down = false;
+
+        if streak >= 4 {
+            match dir {
+                Direction::Down => {
+                    can_go_right = true;
+                    can_go_left = true;
+                }
+                Direction::Up => {
+                    can_go_right = true;
+                    can_go_left = true;
+                }
+                Direction::Left => {
+                    can_go_up = true;
+                    can_go_down = true;
+                }
+                Direction::Right => {
+                    can_go_up = true;
+                    can_go_down = true;
+                }
+            }
+        }
+        if streak < 10 {
+            match dir {
+                Direction::Down => {
+                    can_go_down = true;
+                }
+                Direction::Up => {
+                    can_go_up = true;
+                }
+                Direction::Left => {
+                    can_go_left = true;
+                }
+                Direction::Right => {
+                    can_go_right = true;
+                }
+            }
+        }
+
+        if step.coord.0 > 0 && can_go_left {
+            heap.push(Step::new(
+                (step.coord.0 - 1, step.coord.1),
+                Direction::Left,
+                Some(&step),
+                width,
+                &field,
+                &heuristics,
+            ));
+        }
+
+        if step.coord.0 < width - 1 && can_go_right {
+            heap.push(Step::new(
+                (step.coord.0 + 1, step.coord.1),
+                Direction::Right,
+                Some(&step),
+                width,
+                &field,
+                &heuristics,
+            ));
+        }
+
+        if step.coord.1 > 0 && can_go_up {
+            heap.push(Step::new(
+                (step.coord.0, step.coord.1 - 1),
+                Direction::Up,
+                Some(&step),
+                width,
+                &field,
+                &heuristics,
+            ));
+        }
+
+        if step.coord.1 < height - 1 && can_go_down {
+            heap.push(Step::new(
+                (step.coord.0, step.coord.1 + 1),
+                Direction::Down,
+                Some(&step),
+                width,
+                &field,
+                &heuristics,
+            ));
+        }
+    }
+}
+
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
 enum Direction {
     Left,
@@ -227,20 +364,33 @@ fn parse(input: &str) -> (Vec<u8>, Vec<usize>, usize, usize) {
 
 impl Visited {
     fn new(step: &Step) -> Visited {
+        let dir = step.path[step.path.len() - 1];
+
+        if step.path.len() == 1 {
+            return Self {
+                coord: step.coord,
+                direction: dir,
+                streak: 1,
+            };
+        }
+        for i in 1..step.path.len() - 2 {
+            //if step.path.len() - 1 - i < 0 {
+            if step.path.len() < 1 + i {
+                break;
+            }
+            if step.path[step.path.len() - 1 - i] != dir {
+                return Self {
+                    coord: step.coord,
+                    direction: dir,
+                    streak: i as u8,
+                };
+            }
+        }
+
         Self {
             coord: step.coord,
-            direction: step.path[step.path.len() - 1],
-            streak: if step.path.len() == 1
-                || step.path[step.path.len() - 1] != step.path[step.path.len() - 2]
-            {
-                1
-            } else if step.path.len() == 2
-                || step.path[step.path.len() - 1] != step.path[step.path.len() - 3]
-            {
-                2
-            } else {
-                3
-            },
+            direction: dir,
+            streak: step.path.len() as u8,
         }
     }
 }
