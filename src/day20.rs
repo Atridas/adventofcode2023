@@ -1,3 +1,4 @@
+use gcd::Gcd;
 use std::collections::HashMap;
 
 pub fn puzzle1(input: &str) {
@@ -5,7 +6,8 @@ pub fn puzzle1(input: &str) {
 
     let mut highs = 0;
     let mut lows = 0;
-    for _ in 0..1000 {
+    let mut first_highs = HashMap::new();
+    for c in 1..=100000u64 {
         // missing 'b' is totally intentional!
         let mut pulses = vec![("roadcaster", "", Pulse::Low)];
         while !pulses.is_empty() {
@@ -36,7 +38,17 @@ pub fn puzzle1(input: &str) {
                         }
                     }
                     Some(Module::Conjunction(conjunction)) => {
-                        conjunction.inputs.insert(origin, *pulse);
+                        let prev = conjunction.inputs.insert(origin, *pulse);
+
+                        if let Some(last_pulse) = prev {
+                            if last_pulse != *pulse && *module == "cn" {
+                                println!("{c}: {origin} {:?}", pulse);
+                                if *pulse == Pulse::High && first_highs.get(*origin) == None {
+                                    first_highs.insert(*origin, c);
+                                }
+                            }
+                        }
+
                         let pulse = if conjunction
                             .inputs
                             .values()
@@ -50,14 +62,22 @@ pub fn puzzle1(input: &str) {
                             next_pulses.push((*dst, *module, pulse));
                         }
                     }
-                    None => {}
+                    None => {
+                        if *pulse == Pulse::Low {
+                            println!("{module} {c} {:?}", pulse);
+                        }
+                    }
                 }
             }
             pulses = next_pulses;
         }
+        //println!("-{c}-");
+        //println!("{:?}", modules.get("cn"));
     }
 
-    println!("highs:{highs} lows:{lows} mul:{}", highs * lows);
+    let min = first_highs.values().fold(1, |a, v| a * v / a.gcd(*v));
+    println!("{min}");
+    //println!("highs:{highs} lows:{lows} mul:{}", highs * lows);
 }
 
 fn parse(input: &str) -> HashMap<&str, Module> {
@@ -105,26 +125,30 @@ fn parse(input: &str) -> HashMap<&str, Module> {
     modules
 }
 
-#[derive(PartialEq, Eq, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 enum Pulse {
     High,
     Low,
 }
 
+#[derive(Debug)]
 struct FlipFlop<'a> {
     onoff: bool,
     dsts: Vec<&'a str>,
 }
 
+#[derive(Debug)]
 struct Conjunction<'a> {
     inputs: HashMap<&'a str, Pulse>,
     dsts: Vec<&'a str>,
 }
 
+#[derive(Debug)]
 struct Broadcast<'a> {
     dsts: Vec<&'a str>,
 }
 
+#[derive(Debug)]
 enum Module<'a> {
     FlipFlop(FlipFlop<'a>),
     Conjunction(Conjunction<'a>),
