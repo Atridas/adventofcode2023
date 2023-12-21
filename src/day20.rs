@@ -77,7 +77,7 @@ pub fn puzzle1(input: &str) {
 
     let min = first_highs.values().fold(1, |a, v| a * v / a.gcd(*v));
     println!("{min}");
-    //println!("highs:{highs} lows:{lows} mul:{}", highs * lows);
+    println!("highs:{highs} lows:{lows} mul:{}", highs * lows);
 }
 
 fn parse(input: &str) -> HashMap<&str, Module> {
