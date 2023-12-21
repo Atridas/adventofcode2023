@@ -35,7 +35,9 @@ pub fn puzzle2(input: &str) {
 
     let mut reach = HashSet::new();
     reach.insert(starting_position);
-    for _ in 0..5000 {
+    let mut last_num = 1i64;
+    let mut last_dif = vec![0i64, 0i64, 0i64, 0i64, 0i64];
+    for i in 1..=500 {
         let mut next_reach = HashSet::new();
         for (x, y) in reach {
             let cx = (x % width as i64 + width as i64) as usize % width;
@@ -54,6 +56,20 @@ pub fn puzzle2(input: &str) {
             }
         }
         reach = next_reach;
+
+        print!("{i}: {}", reach.len() as i64);
+        last_dif[4] = reach.len() as i64 - last_num - last_dif[0] - last_dif[1] - last_dif[3];
+        last_dif[3] = reach.len() as i64 - last_num - last_dif[0] - last_dif[1] - last_dif[2];
+        last_dif[2] = reach.len() as i64 - last_num - last_dif[0] - last_dif[1];
+        last_dif[1] = reach.len() as i64 - last_num - last_dif[0];
+        last_dif[0] = reach.len() as i64 - last_num;
+        last_num = reach.len() as i64;
+
+        print!(" | {}", last_dif[0]);
+        print!(" | {}", last_dif[1]);
+        print!(" | {}", last_dif[2]);
+        print!(" | {}", last_dif[3]);
+        println!(" | {}", last_dif[4]);
     }
 
     println!("{}", reach.len());
