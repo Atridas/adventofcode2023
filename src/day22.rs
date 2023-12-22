@@ -1,15 +1,21 @@
+use std::collections::HashSet;
+
 pub fn puzzle1(input: &str) {
     let (mut bricks, size_x, size_y, size_z) = parse_input(input);
 
     let mut world = populate_world(&bricks, size_x, size_y, size_z);
 
+    let mut fallen_bricks = HashSet::new();
     loop {
-        if !tick_world(&mut world, &mut bricks, size_x, size_y) {
+        if !tick_world(&mut world, &mut bricks, &mut fallen_bricks, size_x, size_y) {
             break;
         }
     }
 
     assert!(check_world(&mut world, &mut bricks, size_x, size_y, size_z));
+
+    let bricks = bricks;
+    let world = world;
 
     let mut count = 0;
     'bricks: for (i, brick) in bricks.iter().enumerate() {
@@ -36,6 +42,55 @@ pub fn puzzle1(input: &str) {
             }
         }
         count += 1;
+    }
+
+    println!("{count}");
+}
+
+pub fn puzzle2(input: &str) {
+    let (mut bricks, size_x, size_y, size_z) = parse_input(input);
+
+    let mut world = populate_world(&bricks, size_x, size_y, size_z);
+
+    let mut fallen_bricks = HashSet::new();
+    loop {
+        if !tick_world(&mut world, &mut bricks, &mut fallen_bricks, size_x, size_y) {
+            break;
+        }
+    }
+
+    assert!(check_world(&mut world, &mut bricks, size_x, size_y, size_z));
+
+    let bricks = bricks;
+    let world = world;
+
+    let mut count = 0;
+    for (i, brick) in bricks.iter().enumerate() {
+        let mut bricks_alt = bricks.clone();
+        let mut world_alt = world.clone();
+        fallen_bricks.clear();
+        bricks_alt.swap_remove(i);
+        for (x, y, z) in &brick.tiles {
+            world_alt[(z * size_y + y) * size_x + x] = None;
+        }
+        if i < bricks_alt.len() {
+            for (x, y, z) in &bricks_alt[i].tiles {
+                world_alt[(z * size_y + y) * size_x + x] = Some(i);
+            }
+        }
+
+        loop {
+            if !tick_world(
+                &mut world_alt,
+                &mut bricks_alt,
+                &mut fallen_bricks,
+                size_x,
+                size_y,
+            ) {
+                break;
+            }
+        }
+        count += fallen_bricks.len();
     }
 
     println!("{count}");
@@ -152,6 +207,7 @@ fn check_world(
 fn tick_world(
     world: &mut Vec<Option<usize>>,
     bricks: &mut Vec<Brick>,
+    fallen_bricks: &mut HashSet<usize>,
     size_x: usize,
     size_y: usize,
 ) -> bool {
@@ -172,12 +228,14 @@ fn tick_world(
             *z -= 1;
             world[(*z * size_y + *y) * size_x + *x] = Some(i);
         }
+        fallen_bricks.insert(i);
         something_fell = true;
     }
 
     something_fell
 }
 
+#[derive(Debug, Clone)]
 struct Brick {
     tiles: Vec<(usize, usize, usize)>,
 }
