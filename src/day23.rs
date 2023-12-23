@@ -120,19 +120,24 @@ pub fn puzzle2(input: &str) {
     }
 
     let mut paths = Vec::new();
-    paths.push((vec![(1usize, 0usize)], 0usize));
+    {
+        let mut visited = HashSet::new();
+        visited.insert((1usize, 0usize));
+        paths.push((visited, (1usize, 0usize), 0usize));
+    }
 
     let mut finished_paths = Vec::new();
 
     while let Some(path) = paths.pop() {
-        if path.0.last().unwrap().1 == width - 1 {
+        if path.1 .1 == width - 1 {
             finished_paths.push(path);
         } else {
-            for corridor in nodes.get(path.0.last().unwrap()).unwrap() {
+            for corridor in nodes.get(&path.1).unwrap() {
                 if !path.0.contains(&corridor.0) {
                     let mut path = path.clone();
-                    path.0.push(corridor.0);
-                    path.1 += corridor.1;
+                    path.0.insert(corridor.0);
+                    path.1 = corridor.0;
+                    path.2 += corridor.1;
                     paths.push(path);
                 }
             }
@@ -141,7 +146,7 @@ pub fn puzzle2(input: &str) {
 
     let mut max = 0;
     for path in finished_paths {
-        max = max.max(path.1);
+        max = max.max(path.2);
     }
 
     println!("{max}");
